@@ -34,11 +34,11 @@ class SubgraphDAO:
 
     SUBGRAPH_DB_NAME = "subgraph.db"
 
-    def __init__(self, db_name = SUBGRAPH_DB_NAME):
+    def __init__(self, db_name=SUBGRAPH_DB_NAME):
         self.conn = sqlite3.connect(db_name)
         self.create_tables()
 
-    def __enter__(self, db_name = SUBGRAPH_DB_NAME):
+    def __enter__(self, db_name=SUBGRAPH_DB_NAME):
         self.conn = sqlite3.connect(db_name)
         return self
 
@@ -121,7 +121,10 @@ class SubgraphDAO:
     def get_token_hour_data(self, token_symbol: str) -> List[TokenHourData]:
         """Retrieve token hour data for a given token symbol"""
         cursor = self.conn.cursor()
-        cursor.execute("SELECT * FROM token_hour_data WHERE token_symbol=?", (token_symbol,))
+        cursor.execute(
+            "SELECT * FROM token_hour_data WHERE token_symbol=? ORDER BY period_start_unix ASC",
+            (token_symbol,),
+        )
         rows = cursor.fetchall()
 
         token_hour_data_list = []
@@ -133,11 +136,32 @@ class SubgraphDAO:
                 close=row[4],
                 high=row[5],
                 low=row[6],
-                price_usd=row[7]
+                price_usd=row[7],
             )
             token_hour_data_list.append(token_hour_data)
 
         return token_hour_data_list
+
+    def get_token_metadata(self, token_symbol: str) -> Token:
+        """Retrieve token metadata for a given token symbol"""
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "SELECT * FROM token_metadata WHERE symbol=?",
+            (token_symbol,),
+        )
+        row = cursor.fetchone()
+
+        if row:
+            token = Token(
+                name=row[2],
+                symbol=row[1],
+                total_supply=row[3],
+                volume_usd=row[4],
+                decimals=row[5],
+            )
+            return token
+        else:
+            return None
 
     def close(self):
         """Closes connection on exit"""

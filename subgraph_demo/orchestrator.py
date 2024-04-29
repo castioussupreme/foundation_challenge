@@ -2,11 +2,13 @@
 
 import threading
 import time
+from datetime import datetime
 import uvicorn
 from fastapi import FastAPI
 
 from subgraph_demo.subgraph import UniswapFetcher
 from subgraph_demo.subgraph_dao import SubgraphDAO, Token, TokenHourData
+
 
 TOKENS = {
     "WBTC": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
@@ -34,7 +36,56 @@ async def root():
 
 @app.get("/getChartData/{token_symbol}")
 async def get_chart_data(token_symbol: str, time_unit_hours: int = 1):
-    return subgraph_dao.get_token_hour_data(token_symbol.upper())
+    """Given the token symbol and a timeUnitInHours  (ex. 4 means four hour increments),
+    this will return the token metadata and a 3D array of time, price type ( open, close,
+    high, low, priceUSD ), and the value.
+    """
+    token_hour_data_list = subgraph_dao.get_token_hour_data(token_symbol.upper())
+    metadata_result = subgraph_dao.get_token_metadata(token_symbol.upper())
+
+    hour_data_result = []
+    for attr in ["open", "close", "high", "low", "price_usd"]:
+        attr_data = []
+
+        # Precompute all chunks to include missing data
+        chunk_data = {
+            start // (3600 * time_unit_hours): []
+            for start in range(
+                # Assume data is sorted in ASC order
+                token_hour_data_list[0].period_start_unix,
+                token_hour_data_list[-1].period_start_unix,
+                3600 * time_unit_hours,
+            )
+        }
+
+        # Group data into chunks based on time_unit_hours
+        for entry in token_hour_data_list:
+            chunk_start = entry.period_start_unix // (3600 * time_unit_hours)
+            if chunk_start not in chunk_data:
+                chunk_data[chunk_start] = []
+            chunk_data[chunk_start].append(getattr(entry, attr))
+
+        # Calculate average value for each chunk
+        for chunk_start, values in chunk_data.items():
+            chunk_start_unix = chunk_start * (3600 * time_unit_hours)
+            avg_value = sum(values) / len(values) if values else None
+            attr_data.append([transform_time(chunk_start_unix), attr, avg_value])
+
+        hour_data_result.append(attr_data)
+
+    return {"token_metadata": metadata_result, "3d_array_of_time": hour_data_result}
+
+
+def transform_time(unix_time: int) -> str:
+    """Transforms unix time to desired return value
+
+    Args:
+        unix_time (int): Epoch timestamp
+
+    Returns:
+        str: formatted time in form 2021-01-01T03:28:30
+    """
+    return datetime.fromtimestamp(unix_time).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class UniswapDataCollector:
@@ -112,6 +163,7 @@ def token_data_collect_task(token_name: str, token_address: str) -> None:
     """
     collector = UniswapDataCollector(token_address)
     current_time = int(time.time())
+    # TODO: consider having a flag for backfill mode (current - overwrite) and fetch from latest
     latest_obtained_time = collector.fetch_subgraph_data(
         current_time - SEVEN_DAY_SECONDS
     )
