@@ -14,7 +14,9 @@ easy to set up locally
 
 ## Improvements
 Had a bit of trouble with the in memory db for SQL lite - moved on by manually checking data
-through the SQL viewer in VSCode. This blocked testing for writing/reading from db.
+through the SQL viewer in VSCode. This blocked testing for writing/reading from db. Testing
+of API would have also been welcome as well as API validation. Other improvements include
+TODOs throughout and overall logging/metrics.
 
 
 # Running the code
