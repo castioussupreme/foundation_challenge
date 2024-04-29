@@ -38,7 +38,8 @@ async def root():
 async def get_chart_data(token_symbol: str, time_unit_hours: int = 1):
     """Given the token symbol and a timeUnitInHours  (ex. 4 means four hour increments),
     this will return the token metadata and a 3D array of time, price type ( open, close,
-    high, low, priceUSD ), and the value.
+    high, low, priceUSD ), and the value. The increments will be used to average the data
+    for that time frame, if data is available, else 0 will be presented.
     """
     token_hour_data_list = subgraph_dao.get_token_hour_data(token_symbol.upper())
     metadata_result = subgraph_dao.get_token_metadata(token_symbol.upper())
