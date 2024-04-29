@@ -8,9 +8,14 @@ For running locally with minimal setup sql lite was chosen - postgresSQL would b
 for a production system. Postgres would benefit from using varchar type instead of TEXT for
 indexing
 
+## Serving Layer
+Fast API is great for bench testing and allows for scale as well. In addition, it is extremely
+easy to set up locally
+
 ## Improvements
 Had a bit of trouble with the in memory db for SQL lite - moved on by manually checking data
 through the SQL viewer in VSCode. This blocked testing for writing/reading from db.
+
 
 # Running the code
 

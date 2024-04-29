@@ -118,6 +118,27 @@ class SubgraphDAO:
         )
         self.conn.commit()
 
+    def get_token_hour_data(self, token_symbol: str) -> List[TokenHourData]:
+        """Retrieve token hour data for a given token symbol"""
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM token_hour_data WHERE token_symbol=?", (token_symbol,))
+        rows = cursor.fetchall()
+
+        token_hour_data_list = []
+        for row in rows:
+            token_hour_data = TokenHourData(
+                token_symbol=row[1],
+                period_start_unix=row[2],
+                open=row[3],
+                close=row[4],
+                high=row[5],
+                low=row[6],
+                price_usd=row[7]
+            )
+            token_hour_data_list.append(token_hour_data)
+
+        return token_hour_data_list
+
     def close(self):
         """Closes connection on exit"""
         self.conn.close()

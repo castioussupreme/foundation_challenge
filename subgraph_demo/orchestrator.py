@@ -2,6 +2,8 @@
 
 import threading
 import time
+import uvicorn
+from fastapi import FastAPI
 
 from subgraph_demo.subgraph import UniswapFetcher
 from subgraph_demo.subgraph_dao import SubgraphDAO, Token, TokenHourData
@@ -19,6 +21,22 @@ HOUR_SECONDS = 3600
 SERVICE_BARRIER = threading.Barrier(len(TOKENS) + 1)
 
 
+# SERVICE DEFINITION
+
+app = FastAPI()
+subgraph_dao = SubgraphDAO()
+
+
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
+
+
+@app.get("/getChartData/{token_symbol}")
+async def get_chart_data(token_symbol: str, time_unit_hours: int = 1):
+    return subgraph_dao.get_token_hour_data(token_symbol.upper())
+
+
 class UniswapDataCollector:
     """Collects subgraph data"""
 
@@ -28,7 +46,7 @@ class UniswapDataCollector:
         self.subgraph_dao = SubgraphDAO()
         # TODO: determine if this needs to be polled again after some time
         metadata = self.uniswap_fetcher.fetch_uniswap_token(token_address)
-        
+
         self.symbol = metadata.symbol
         self.subgraph_dao.upsert_token_metadata(
             Token(
@@ -56,13 +74,13 @@ class UniswapDataCollector:
         )
         db_new_hour_data = [
             TokenHourData(
-                token_symbol = self.symbol,
-                period_start_unix = nhd.periodStartUnix,
-                open = nhd.open,
-                close = nhd.close,
-                high = nhd.high,
-                low = nhd.low,
-                price_usd = nhd.priceUSD,
+                token_symbol=self.symbol,
+                period_start_unix=nhd.periodStartUnix,
+                open=nhd.open,
+                close=nhd.close,
+                high=nhd.high,
+                low=nhd.low,
+                price_usd=nhd.priceUSD,
             )
             for nhd in new_hour_data
         ]
@@ -104,9 +122,6 @@ def token_data_collect_task(token_name: str, token_address: str) -> None:
 
 
 if __name__ == "__main__":
-    with SubgraphDAO() as dao:
-        dao.create_tables()
-
     for name, address in TOKENS.items():
         t = threading.Thread(
             target=token_data_collect_task,
@@ -118,4 +133,7 @@ if __name__ == "__main__":
         t.start()
     SERVICE_BARRIER.wait()
     print("🚀 Backfill complete - starting API service and continuing to poll 🚀")
-    # TODO: start the service
+
+    uvicorn.run(
+        "subgraph_demo.orchestrator:app", host="127.0.0.1", port=8000, reload=True
+    )
