@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "subgraph_demo"
+version = "0.1.0"
+description = "Sample project that scrapes blockchain data, stores it, and serves an API for access"
+authors = ["Jean Castillo <jeancastillopierre@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "subgraph_demo"}]
+
+[tool.poetry.scripts]
+subgraph_demo_start = "subgraph_demo.orchestrator:main"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+requests = "^2.28.2"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.2.2"
+requests-mock = "^1.10.0"
+
+[build-system]
+requires = ["poetry_core"]
+build-backend = "poetry.core.masonry.api"
