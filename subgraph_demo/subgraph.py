@@ -9,7 +9,6 @@ from requests.adapters import HTTPAdapter, Retry
 @dataclass
 class Token:
     """Data type for token metadata on chain. Names as exactly as the graphQL server accepts them"""
-
     name: str
     symbol: str
     totalSupply: int
@@ -20,7 +19,6 @@ class Token:
 @dataclass
 class TokenHourData:
     """Data type for Hourly chain data. Names as exactly as the graphQL server accepts them"""
-
     periodStartUnix: int
     open: float
     close: float
